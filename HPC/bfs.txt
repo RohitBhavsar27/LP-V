@@ -1,0 +1,62 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <omp.h>
+using namespace std;
+
+vector<bool> visited;
+vector<vector<int>> graph;
+
+void edge(int a, int b) {
+    graph[a].push_back(b);
+    // Assuming the graph is undirected, add the reverse edge as well;
+    graph[b].push_back(a);  // If the graph is directed, remove the following line.
+}
+
+void bfs(int start) {
+    queue<int> q;
+    q.push(start);
+    visited[start] = true;
+    
+    while (!q.empty()) {
+        int vertex = q.front();
+        q.pop();
+        cout << vertex << " ";
+
+        #pragma omp parallel for
+        for (int i = 0; i < graph[vertex].size(); i++) {
+            int neighbor = graph[vertex][i];
+            if (!visited[neighbor]) {
+                visited[neighbor] = true;
+                #pragma omp critical
+                q.push(neighbor);
+            }
+        }
+    }
+}
+
+int main() {
+    int n = 8; // Assuming 8 vertices, adjust according to your graph
+    visited.assign(n, false);
+    graph.assign(n, vector<int>());
+    
+    // edges of graph 
+    edge(0, 1);
+    edge(1, 2);
+    edge(1, 3);
+    edge(2, 4);
+    edge(3, 4);
+    edge(4, 5);
+    edge(5, 6);
+    edge(5, 7);
+    
+    double st = omp_get_wtime();
+    for (int i = 0; i < n; i++) {
+        if (!visited[i])
+            bfs(i);
+    }
+    double et = omp_get_wtime();
+    cout << "\nParallel BFS time: " << et - st << endl;
+
+    return 0;
+}
